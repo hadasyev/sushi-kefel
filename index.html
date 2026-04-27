@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>סושי כפל</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --wood-light: #f3e5d0;
+            --wood-dark: #b3916d;
+        }
+        body {
+            font-family: 'Assistant', sans-serif;
+            background-color: #faf7f2;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            margin: 0;
+            position: fixed;
+        }
+        .japandi-wood {
+            background: linear-gradient(to bottom, var(--wood-light), #dec9ae);
+            border-top: 3px solid var(--wood-dark);
+        }
+        .sushi-plate {
+            transition: all 0.1s ease-out;
+            border-bottom: 3px solid #ccc;
+        }
+        .sushi-plate:active {
+            transform: translateY(2px);
+            border-bottom: 0;
+        }
+        .customer-card {
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 30;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+        .floating { animation: float 3s ease-in-out infinite; }
+        .progress-bar { transition: width 0.4s linear; }
+        
+        .overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
+            text-align: center;
+        }
+
+        .btn-control {
+            color: #777;
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 8px;
+            border: 1px solid rgba(0,0,0,0.1);
+            transition: all 0.2s;
+            background: rgba(255, 255, 255, 0.4);
+            white-space: nowrap;
+        }
+        .btn-control:hover {
+            color: #333;
+            background: white;
+            border-color: rgba(0,0,0,0.2);
+        }
+
+        .strike-icon {
+            transition: all 0.3s ease;
+            filter: grayscale(1);
+            opacity: 0.2;
+        }
+        .strike-active {
+            filter: grayscale(0);
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        #badge-shelf {
+            position: fixed;
+            right: 15px;
+            top: 100px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 10;
+            pointer-events: none;
+        }
+        .badge-item {
+            font-size: 1.5rem;
+            background: white;
+            padding: 4px;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border: 1px solid #f3e5d0;
+            animation: badgePop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes badgePop {
+            0% { transform: scale(0); }
+            100% { transform: scale(1); }
+        }
+
+        .gender-btn {
+            border: 2px solid #ddd;
+            padding: 10px 20px;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .gender-btn.active {
+            border-color: #f97316;
+            background: #fff7ed;
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-between">
+
+    <!-- Header -->
+    <header class="w-full max-w-5xl px-3 sm:px-8 py-4 flex justify-between items-center z-50">
+        <div class="flex-1 flex items-center gap-1.5 sm:gap-4 min-w-0">
+            <div class="bg-white/70 px-2 sm:px-4 py-1.5 rounded-xl border border-gray-100 flex items-center gap-1.5 shadow-sm shrink-0">
+                <span class="text-base sm:text-xl">⭐</span>
+                <span id="score" class="font-bold text-base sm:text-xl text-gray-700 leading-none">0</span>
+            </div>
+            <div id="multiplier-badge" class="hidden bg-blue-500 text-white px-1.5 py-0.5 rounded-full text-[8px] sm:text-[10px] font-bold animate-pulse shrink-0">X2</div>
+            <div class="flex flex-col items-center min-w-[35px] sm:min-w-[50px] shrink-0">
+                <div id="streak" class="font-black text-orange-500 text-lg sm:text-2xl leading-none">0</div>
+                <div class="text-[7px] sm:text-[9px] text-gray-400 font-bold uppercase tracking-widest">רצף</div>
+            </div>
+        </div>
+
+        <div class="flex-shrink-0 flex justify-center items-center px-1">
+            <div id="lives-container" class="flex gap-1 sm:gap-2 bg-white/30 px-2 sm:px-3 py-1 rounded-full border border-white/40">
+                <span class="strike-icon text-xl sm:text-2xl">😠</span>
+                <span class="strike-icon text-xl sm:text-2xl">😠</span>
+                <span class="strike-icon text-xl sm:text-2xl">😠</span>
+            </div>
+        </div>
+
+        <div class="flex-1 flex justify-end items-center gap-1 sm:gap-2">
+            <button onclick="togglePause()" class="btn-control">הפסקה</button>
+            <button onclick="showEndConfirm()" class="btn-control">סיום</button>
+        </div>
+    </header>
+
+    <div id="badge-shelf"></div>
+
+    <main id="game-canvas" class="flex-grow w-full max-w-4xl relative flex items-start justify-around pt-12 px-4 sm:px-6">
+    </main>
+
+    <section id="counter-area" class="w-full h-[32%] japandi-wood relative flex flex-col items-center justify-end pb-8 z-40">
+        <div class="absolute -top-12 flex items-center gap-8">
+            <div id="chopping-block" class="w-28 h-14 bg-white/95 rounded-xl border-2 border-dashed border-orange-200 flex items-center justify-center shadow-md">
+                <div id="display-text" class="flex items-center gap-2 font-bold text-xl text-gray-300">
+                    <span id="val1">?</span>
+                    <span class="text-orange-200">×</span>
+                    <span id="val2">?</span>
+                </div>
+            </div>
+            <div id="served-dish" class="w-14 h-14 bg-white rounded-full border-2 border-orange-50 shadow-sm flex items-center justify-center text-3xl transition-all duration-300"></div>
+        </div>
+        <div class="grid grid-cols-5 sm:grid-cols-10 gap-2 sm:gap-3 px-6 w-full max-w-3xl"></div>
+    </section>
+
+    <!-- Setup Screen (Initial Entry - Fun Tone) -->
+    <div id="setup-screen" class="overlay">
+        <div class="text-7xl mb-4 animate-bounce">🍣</div>
+        <h1 class="text-4xl font-black text-gray-800 mb-2 tracking-tight">סושי כפל: אלופי המטבח!</h1>
+        <p class="text-gray-600 mb-8 px-8 max-w-sm text-lg italic">
+            הלקוחות כבר בדרך והרולים מחכים – בואו נראה אתכם מנצחים את המכפלות בשיא המהירות!
+        </p>
+        
+        <div class="w-full max-w-xs flex flex-col gap-4">
+            <input type="text" id="user-name-input" placeholder="שם" class="w-full p-4 rounded-2xl border-2 border-orange-100 text-center text-xl focus:border-orange-400 focus:bg-orange-50 outline-none transition-all shadow-sm">
+            <div class="flex gap-4 justify-center">
+                <div onclick="setGender('male')" id="male-btn" class="gender-btn flex flex-col items-center gap-1 active">
+                    <span class="text-4xl">👨‍🍳</span>
+                    <span class="text-sm font-bold">שף</span>
+                </div>
+                <div onclick="setGender('female')" id="female-btn" class="gender-btn flex flex-col items-center gap-1">
+                    <span class="text-4xl">👩‍🍳</span>
+                    <span class="text-sm font-bold">שפית</span>
+                </div>
+            </div>
+        </div>
+        <button onclick="goToStartScreen()" class="mt-8 bg-orange-500 text-white px-16 py-4 rounded-full font-black text-xl shadow-xl hover:bg-orange-600 active:scale-95 transition-all">
+            יוצאים לדרך! 🥢
+        </button>
+
+           </div>
+
+    <!-- Start Screen (Instructions) -->
+    <div id="start-screen" class="overlay" style="display: none;">
+        <div class="text-7xl mb-6">⛩️</div>
+        <h2 id="welcome-title" class="text-4xl font-black text-gray-800 mb-4"></h2>
+        <div id="welcome-text" class="text-lg text-gray-600 mb-8 max-w-md mx-auto px-6 leading-relaxed"></div>
+        <div class="flex gap-4 text-4xl mb-10 opacity-80">🍱 🍥 🍙</div>
+        <button onclick="startGame()" class="bg-orange-500 text-white px-14 py-4 rounded-full font-bold text-xl shadow-lg hover:bg-orange-600 hover:-translate-y-1 transition-all">
+            נתחיל להכין סושי! 🥢
+        </button>
+    </div>
+
+    <!-- Other Overlays -->
+    <div id="pause-screen" class="overlay" style="display: none;">
+        <div class="text-6xl mb-4">🍵</div>
+        <h2 id="pause-title" class="text-4xl font-black text-gray-800 mb-3"></h2>
+        <p id="pause-text" class="text-gray-500 mb-10"></p>
+        <button onclick="togglePause()" class="bg-gray-800 text-white px-12 py-4 rounded-full font-bold text-lg shadow-md">חזרה למטבח</button>
+    </div>
+
+    <div id="surprise-screen" class="overlay" style="display: none;">
+        <div id="gift-box" class="text-8xl mb-6 cursor-pointer animate-bounce">🎁</div>
+        <h2 id="surprise-title" class="text-4xl font-black text-gray-800 mb-3">מתנה!</h2>
+        <p id="surprise-hint" class="text-gray-500 mb-8 font-semibold"></p>
+        <div id="badge-reveal" class="hidden flex-col items-center">
+            <div id="revealed-badge-icon" class="text-9xl mb-4">🎖️</div>
+            <div id="revealed-badge-name" class="text-2xl font-bold text-orange-600 mb-10">תג חדש לאוסף!</div>
+            <button id="surprise-continue-btn" onclick="closeSurprise()" class="bg-gray-800 text-white px-12 py-4 rounded-full font-bold"></button>
+        </div>
+    </div>
+
+    <div id="confirm-modal" class="overlay" style="display: none; background: rgba(0,0,0,0.2);">
+        <div class="bg-white p-10 rounded-[2rem] shadow-2xl max-w-sm w-full border border-gray-100 mx-4">
+            <h3 id="confirm-title" class="text-2xl font-bold mb-4">סוגרים להיום?</h3>
+            <p id="confirm-text" class="text-gray-400 mb-8"></p>
+            <div class="flex gap-3">
+                <button onclick="endGame('voluntary')" class="flex-1 bg-red-500 text-white py-3 rounded-xl font-bold text-base">כן, סיימתי</button>
+                <button onclick="hideEndConfirm()" class="flex-1 bg-gray-100 text-gray-600 py-3 rounded-xl font-bold text-base">ביטול</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="game-over" class="overlay" style="display: none;">
+        <div id="game-over-icon" class="text-7xl mb-6">🍱</div>
+        <h2 id="game-over-title" class="text-4xl font-black text-gray-800 mb-3 tracking-tight"></h2>
+        <p id="game-over-msg" class="text-lg text-gray-500 mb-10 max-w-md px-6 leading-relaxed"></p>
+        <div class="bg-orange-50 px-12 py-8 rounded-[2rem] mb-10 border border-orange-100 shadow-inner">
+            <div class="text-xs text-gray-400 mb-1 uppercase font-bold tracking-widest">ניקוד סופי:</div>
+            <div id="final-score" class="text-5xl font-black text-black-500 leading-none">0</div>
+        </div>
+        <button onclick="restartGame()" class="bg-gray-800 text-white px-12 py-4 rounded-full font-bold text-xl shadow-md hover:bg-gray-900 transition-all">משמרת חדשה 🥢</button>
+    </div>
+
+    <div id="toast" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white/95 px-8 py-4 rounded-full shadow-2xl scale-0 transition-transform duration-200 z-50 pointer-events-none border border-orange-50">
+        <div id="toast-content" class="text-lg font-bold text-gray-700"></div>
+    </div>
+
+    <script>
+        let userName = "";
+        let userGender = "male";
+        let score = 0, streak = 0, lives = 3, selected = [], customers = [];
+        let multiplier = false, lastSpawn = 0, isRunning = false, isPaused = false;
+        let spawnInterval = 4200, sessionStreak = 0;
+        let badgesCollected = 0;
+
+        const badges = [
+            { icon: '🏮', name: 'תג המנורה' }, { icon: '🎎', name: 'תג הבובה' },
+            { icon: '🏯', name: 'תג הטירה' }, { icon: '🗻', name: 'תג ההר' },
+            { icon: '🎏', name: 'תג הדג' }, { icon: '⚔️', name: 'תג הסמוראי' },
+            { icon: '🎋', name: 'תג המזל' }, { icon: '🥋', name: 'תג החגורה' }
+        ];
+        const sushiIcons = ['🍣', '🍱', '🍥', '🥠', '🍜', '🍛', '🥣', '🍣', '🥡', '🍡'];
+
+        const canvas = document.getElementById('game-canvas');
+        const plateContainer = document.querySelector('#counter-area .grid');
+        const scoreDisp = document.getElementById('score'), streakDisp = document.getElementById('streak');
+        const livesIcons = document.querySelectorAll('.strike-icon');
+
+        const t = (maleStr, femaleStr) => userGender === "male" ? maleStr : femaleStr;
+
+        function setGender(g) {
+            userGender = g;
+            document.querySelectorAll('.gender-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`${g}-btn`).classList.add('active');
+        }
+
+        function goToStartScreen() {
+            const input = document.getElementById('user-name-input');
+            userName = input.value.trim() || t("השף", "השפית");
+            
+            document.getElementById('setup-screen').style.display = 'none';
+            document.getElementById('start-screen').style.display = 'flex';
+            
+            document.getElementById('welcome-title').innerText = t(`איזה כיף שבאת, ${userName}!`, `איזה כיף שבאת, ${userName}!`);
+            
+            document.getElementById('welcome-text').innerHTML = `
+                <p class="mb-4">כדי להכין סושי מושלם, צריך להיות ${t('מהיר ומדויק', 'מהירה ומדויקת')}!</p>
+                <p class="font-bold text-orange-600 italic">איך מכינים מנה? ${t('לחץ', 'לחצי')} על שני מספרים מהלוח למטה שכשמכפילים אותם, מקבלים את המספר שמעל הלקוח.</p>
+                <p class="mt-4">רצף של עשר מנות שווה תג מיוחד! צבירת ארבעה תגים הופכת אותך ל${t('מאסטר סושי רשמי', 'מאסטרית סושי רשמית')}.</p>
+            `;
+            
+            init();
+        }
+
+        function init() {
+            plateContainer.innerHTML = '';
+            for (let i = 1; i <= 10; i++) {
+                const p = document.createElement('button');
+                p.className = "sushi-plate aspect-square bg-white rounded-xl shadow-sm border border-gray-100 flex items-center justify-center font-black text-2xl text-gray-600 hover:bg-orange-50/50 active:bg-gray-100 transition-colors";
+                p.innerText = i;
+                p.onclick = () => handleInput(i, p);
+                plateContainer.appendChild(p);
+            }
+            updateLivesUI();
+        }
+
+        function startGame() {
+            document.getElementById('start-screen').style.display = 'none';
+            isRunning = true;
+            lastSpawn = performance.now() - (spawnInterval - 500);
+            requestAnimationFrame(gameLoop);
+        }
+
+        function togglePause() {
+            if (!isRunning && !isPaused) return;
+            isPaused = !isPaused;
+            const pauseOverlay = document.getElementById('pause-screen');
+            pauseOverlay.style.display = isPaused ? 'flex' : 'none';
+            
+            if (isPaused) {
+                document.getElementById('pause-title').innerText = t(`${userName} בהפסקת תה`, `${userName} בהפסקת תה`);
+                document.getElementById('pause-text').innerText = t("קח רגע לנשימה. הלקוחות מחכים בסבלנות.", "קחי רגע לנשימה. הלקוחות מחכים בסבלנות.");
+            }
+        }
+
+        function showEndConfirm() {
+            if (!isRunning) return;
+            isPaused = true;
+            document.getElementById('confirm-modal').style.display = 'flex';
+            document.getElementById('confirm-title').innerText = t("סוגרים להיום?", "סוגרים להיום?");
+            document.getElementById('confirm-text').innerText = t("המשמרת תסתיים ויוצג הניקוד הסופי.", "המשמרת תסתיים ויוצג הניקוד הסופי.");
+        }
+
+        function hideEndConfirm() {
+            isPaused = false;
+            document.getElementById('confirm-modal').style.display = 'none';
+        }
+
+        function handleInput(num, el) {
+            if (!isRunning || isPaused || selected.length >= 2) return;
+            selected.push(num);
+            el.classList.add('bg-orange-50', 'border-orange-300', 'text-orange-600');
+            updateUI();
+            if (selected.length === 2) setTimeout(processOrder, 180);
+        }
+
+        function updateUI() {
+            document.getElementById('val1').innerText = selected[0] || '?';
+            document.getElementById('val2').innerText = selected[1] || '?';
+            document.getElementById('val1').className = selected[0] ? 'text-gray-800' : 'text-gray-300';
+            document.getElementById('val2').className = selected[1] ? 'text-gray-800' : 'text-gray-300';
+        }
+
+        function processOrder() {
+            const product = selected[0] * selected[1];
+            const customerIdx = customers.findIndex(c => c.target === product);
+
+            if (customerIdx !== -1) {
+                const c = customers[customerIdx];
+                score += (multiplier ? 20 : 10);
+                streak++; sessionStreak++;
+                
+                document.getElementById('served-dish').innerText = sushiIcons[Math.floor(Math.random() * sushiIcons.length)];
+                showToast(t('יאמי! 😋', 'יאמי! 😋'));
+                
+                c.el.style.transform = "scale(0) translateY(-60px)";
+                c.el.style.opacity = "0";
+                setTimeout(() => {
+                    if (c.el.parentNode) c.el.remove();
+                    customers = customers.filter(item => item.id !== c.id);
+                }, 400);
+
+                scoreDisp.innerText = score;
+                streakDisp.innerText = streak;
+
+                if (streak >= 5 && !multiplier) toggleMultiplier(true);
+                if (sessionStreak > 0 && sessionStreak % 10 === 0) {
+                    setTimeout(showSurprise, 600);
+                }
+                
+                spawnInterval = Math.max(1600, 4200 - (score * 5.2));
+            } else {
+                streak = 0; sessionStreak = 0;
+                toggleMultiplier(false);
+                showToast(t('אופס, טעות! ❌', 'אופס, טעות! ❌'));
+                document.getElementById('chopping-block').classList.add('border-red-300');
+                setTimeout(() => document.getElementById('chopping-block').classList.remove('border-red-300'), 500);
+                streakDisp.innerText = streak;
+            }
+            clearInput();
+        }
+
+        function clearInput() {
+            selected = []; updateUI();
+            document.querySelectorAll('.sushi-plate').forEach(p => p.classList.remove('bg-orange-50', 'border-orange-200', 'text-orange-600'));
+        }
+
+        function spawn() {
+            if (!isRunning || isPaused || customers.length >= 3) return;
+            const n1 = Math.floor(Math.random() * 9) + 2, n2 = Math.floor(Math.random() * 9) + 2;
+            const target = n1 * n2, id = Math.random().toString(36).substr(2, 9);
+           const characters = ['🫅', '👸', '👨‍🎨', '👩‍🎨', '👨‍🎓', '👩‍🎓', '🕵️', '🕵️‍♀️', '👨‍⚕️', '👩‍⚕️', '👨‍🌾', '👩‍🌾', '🥷', '🧚‍♀️', '🧙‍♂️', '👨‍🔧', '👩‍🔧', '👨‍🚀', '👩‍🚀', '👩‍🔬', '👨‍🔬'];
+            const el = document.createElement('div');
+            el.className = "customer-card flex flex-col items-center gap-3 w-32 floating";
+            el.innerHTML = `
+                <div class="relative bg-white p-4 rounded-[2rem] shadow-md border border-gray-100 w-full text-center">
+                    <div class="text-[9px] font-bold text-gray-300 mb-1 uppercase tracking-widest">הזמנה</div>
+                    <div class="text-3xl font-black text-gray-800">${target}</div>
+                    <div class="w-full h-1.5 bg-gray-100 rounded-full mt-3 overflow-hidden">
+                        <div class="progress-bar h-full bg-green-500 w-full"></div>
+                    </div>
+                </div>
+                <div class="icon text-6xl transition-transform duration-300">${characters[Math.floor(Math.random()*characters.length)]}</div>
+            `;
+            customers.push({ id, target, patience: 100, el, angry: false });
+            canvas.appendChild(el);
+        }
+
+        function gameLoop(time) {
+            if (!isRunning || isPaused) { lastSpawn = time - (time - lastSpawn); requestAnimationFrame(gameLoop); return; }
+            customers.forEach((c) => {
+                c.patience -= (0.023 + (score * 0.00005));
+                const bar = c.el.querySelector('.progress-bar');
+                if (bar) bar.style.width = c.patience + '%';
+                if (c.patience < 35 && !c.angry) {
+                    c.angry = true; 
+                    c.el.querySelector('.icon').innerText = '😡';
+                    if (bar) bar.style.backgroundColor = "#ef4444";
+                }
+                if (c.patience <= 0) {
+                    lives--; updateLivesUI();
+                    showToast('הסבלנות נגמרה... 😞');
+                    c.el.style.transform = "translateX(-150px) rotate(-10deg)"; c.el.style.opacity = "0";
+                    const rid = c.id;
+                    setTimeout(() => { if (c.el.parentNode) c.el.remove(); customers = customers.filter(it => it.id !== rid); }, 400);
+                    streak = 0; sessionStreak = 0; streakDisp.innerText = 0; toggleMultiplier(false);
+                    if (lives <= 0) endGame('failure');
+                    c.patience = 999;
+                }
+            });
+            if (time - lastSpawn > spawnInterval) { spawn(); lastSpawn = time; }
+            requestAnimationFrame(gameLoop);
+        }
+
+        function updateLivesUI() {
+            livesIcons.forEach((icon, i) => {
+                if (i < (3 - lives)) {
+                    icon.classList.add('strike-active');
+                    icon.style.filter = "grayscale(0)";
+                    icon.style.opacity = "1";
+                } else {
+                    icon.classList.remove('strike-active');
+                    icon.style.filter = "grayscale(1)";
+                    icon.style.opacity = "0.2";
+                }
+            });
+        }
+
+        function toggleMultiplier(on) {
+            multiplier = on;
+            document.getElementById('multiplier-badge').classList.toggle('hidden', !on);
+            document.getElementById('counter-area').style.backgroundColor = on ? "#f0faff" : "";
+        }
+
+        function showSurprise() {
+            isPaused = true;
+            document.getElementById('gift-box').style.display = 'block';
+            document.getElementById('badge-reveal').style.display = 'none';
+            document.getElementById('surprise-hint').style.display = 'block';
+            document.getElementById('surprise-screen').style.display = 'flex';
+            
+            document.getElementById('surprise-title').innerText = t("מתנה לשף!", "מתנה לשפית!");
+            document.getElementById('surprise-hint').innerText = t(`הגשת 10 מנות ברצף מושלם, ${userName}! לחץ על המתנה.`, `הגשת 10 מנות ברצף מושלם, ${userName}! לחצי על המתנה.`);
+            
+            document.getElementById('gift-box').onclick = () => {
+                const b = badges[Math.floor(Math.random() * badges.length)];
+                document.getElementById('gift-box').style.display = 'none';
+                document.getElementById('surprise-hint').style.display = 'none';
+                document.getElementById('revealed-badge-icon').innerText = b.icon;
+                document.getElementById('revealed-badge-name').innerText = b.name;
+                document.getElementById('badge-reveal').style.display = 'flex';
+                document.getElementById('surprise-continue-btn').innerText = t("המשך לעבוד", "המשיכי לעבוד");
+                
+                const shelf = document.getElementById('badge-shelf');
+                const bEl = document.createElement('div');
+                bEl.className = "badge-item";
+                bEl.innerText = b.icon;
+                shelf.appendChild(bEl);
+                
+                badgesCollected++;
+            };
+        }
+
+        function closeSurprise() { 
+            document.getElementById('surprise-screen').style.display = 'none'; 
+            isPaused = false; 
+            if (badgesCollected >= 4) endGame('master');
+        }
+
+        function showToast(msg) {
+            document.getElementById('toast-content').innerText = msg;
+            toast.classList.add('scale-100');
+            setTimeout(() => toast.classList.remove('scale-100'), 1400);
+        }
+
+        function endGame(reason) { 
+            isRunning = false; isPaused = false; 
+            document.getElementById('final-score').innerText = score;
+            const title = document.getElementById('game-over-title');
+            const msg = document.getElementById('game-over-msg');
+            const icon = document.getElementById('game-over-icon');
+            
+            if (reason === 'master') {
+                title.innerText = t("שף מצטיין – משמרת הזהב!", "שפית מצטיינת – משמרת הזהב!");
+                msg.innerText = t(
+                    `וואו, ${userName}! השגת ארבעה תגי הצטיינות במשמרת אחת! אתה שף סושי אגדי ומאסטר כפל אמיתי. כל הכבוד!`,
+                    `וואו, ${userName}! השגת ארבעה תגי הצטיינות במשמרת אחת! את שפית סושי אגדית ומאסטרית כפל אמיתית. כל הכבוד!`
+                );
+                icon.innerText = "👑";
+                document.getElementById('game-over').style.backgroundColor = "rgba(255, 248, 220, 0.98)";
+            } else if (reason === 'failure') {
+                title.innerText = "היה קצת עמוס במטבח...";
+                msg.innerText = t(
+                    `הלקוחות איבדו את הסבלנות היום, ${userName}, אבל לא נורא! כל שף גדול לומד מטעויות. בוא ננסה שוב!`,
+                    `הלקוחות איבדו את הסבלנות היום, ${userName}, אבל לא נורא! כל שפית גדולה לומדת מטעויות. בואי ננסי שוב!`
+                );
+                icon.innerText = "🍥";
+                document.getElementById('game-over').style.backgroundColor = "rgba(255, 255, 255, 0.98)";
+            } else {
+                title.innerText = "המשמרת הסתיימה!";
+                msg.innerText = t(
+                    `החלטת לסגור את המסעדה להיום. עשית עבודה מצוינת והלקוחות נהנו מאוד!`,
+                    `החלטת לסגור את המסעדה להיום. עשית עבודה מצוינת והלקוחות נהנו מאוד!`
+                );
+                icon.innerText = "🍱";
+                document.getElementById('game-over').style.backgroundColor = "rgba(255, 255, 255, 0.98)";
+            }
+            
+            document.getElementById('game-over').style.display = 'flex'; 
+            document.getElementById('confirm-modal').style.display = 'none'; 
+        }
+
+        function restartGame() {
+            score = 0; streak = 0; lives = 3; sessionStreak = 0; spawnInterval = 4200; badgesCollected = 0;
+            customers.forEach(c => c.el.remove()); customers = [];
+            document.getElementById('badge-shelf').innerHTML = '';
+            scoreDisp.innerText = 0; streakDisp.innerText = 0;
+            updateLivesUI(); document.getElementById('game-over').style.display = 'none';
+            isRunning = true; lastSpawn = performance.now() - (spawnInterval - 500); requestAnimationFrame(gameLoop);
+        }
+
+        init();
+    </script>
+</body>
+</html>
