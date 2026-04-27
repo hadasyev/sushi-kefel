@@ -442,7 +442,7 @@
                 }
                 if (c.patience <= 0) {
                     lives--; updateLivesUI();
-                    showToast('הסבלנות נגמרה 😞');
+                    showToast('נגמרה הסבלנות');
                     c.el.style.transform = "translateX(-150px) rotate(-10deg)"; c.el.style.opacity = "0";
                     const rid = c.id;
                     setTimeout(() => { if (c.el.parentNode) c.el.remove(); customers = customers.filter(it => it.id !== rid); }, 400);
@@ -534,8 +534,8 @@
             } else if (reason === 'failure') {
                 title.innerText = "היה קצת עמוס במטבח...";
                 msg.innerText = t(
-                    `הלקוחות איבדו את הסבלנות היום, ${userName}, אבל לא נורא! כל שף גדול לומד מטעויות. בוא ננסה שוב!`,
-                    `הלקוחות איבדו את הסבלנות היום, ${userName}, אבל לא נורא! כל שפית גדולה לומדת מטעויות. בואי ננסי שוב!`
+                    `הלקוחות איבדו את הסבלנות היום, ${userName}, אבל לא נורא! כל שף גדול לומד מטעויות. בוא תנסה שוב!`,
+                    `הלקוחות איבדו את הסבלנות היום, ${userName}, אבל לא נורא! כל שפית גדולה לומדת מטעויות. בואי תנסי שוב!`
                 );
                 icon.innerText = "🍥";
                 document.getElementById('game-over').style.backgroundColor = "rgba(255, 255, 255, 0.98)";
