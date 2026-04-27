@@ -11,14 +11,18 @@
             --wood-light: #f3e5d0;
             --wood-dark: #b3916d;
         }
+        html, body {
+            width: 100%;
+            min-height: 100%;
+            margin: 0;
+        }
+
         body {
             font-family: 'Assistant', sans-serif;
             background-color: #faf7f2;
-            overflow: hidden;
-            width: 100vw;
-            height: 100vh;
-            margin: 0;
-            position: fixed;
+            overflow-x: hidden;
+            overflow-y: auto;
+            min-height: 100dvh;
         }
         .japandi-wood {
             background: linear-gradient(to bottom, var(--wood-light), #dec9ae);
@@ -154,10 +158,10 @@
 
     <div id="badge-shelf"></div>
 
-    <main id="game-canvas" class="flex-grow w-full max-w-4xl relative flex items-start justify-around pt-12 px-4 sm:px-6">
+    <main id="game-canvas" class="flex-1 min-h-0 w-full max-w-4xl relative flex items-start justify-around pt-6 sm:pt-12 px-4 sm:px-6">
     </main>
 
-    <section id="counter-area" class="w-full h-[32%] japandi-wood relative flex flex-col items-center justify-end pb-8 z-40">
+    <section id="counter-area" class="w-full japandi-wood relative flex flex-col items-center justify-end pb-[calc(1rem+env(safe-area-inset-bottom))] sm:pb-8 z-40" style="height: clamp(170px, 28dvh, 260px);">
         <div class="absolute -top-12 flex items-center gap-8">
             <div id="chopping-block" class="w-28 h-14 bg-white/95 rounded-xl border-2 border-dashed border-orange-200 flex items-center justify-center shadow-md">
                 <div id="display-text" class="flex items-center gap-2 font-bold text-xl text-gray-300">
@@ -438,7 +442,7 @@
                 }
                 if (c.patience <= 0) {
                     lives--; updateLivesUI();
-                    showToast('הסבלנות נגמרה... 😞');
+                    showToast('הסבלנות נגמרה 😞');
                     c.el.style.transform = "translateX(-150px) rotate(-10deg)"; c.el.style.opacity = "0";
                     const rid = c.id;
                     setTimeout(() => { if (c.el.parentNode) c.el.remove(); customers = customers.filter(it => it.id !== rid); }, 400);
