@@ -315,6 +315,13 @@
                 p.className = "sushi-plate aspect-square bg-white rounded-xl shadow-sm border border-gray-100 flex items-center justify-center font-black text-2xl text-gray-600 hover:bg-orange-50/50 active:bg-gray-100 transition-colors";
                 p.innerText = i;
                 p.onclick = () => handleInput(i, p);
+                p.addEventListener('touchend', function (event) {
+                    const now = Date.now();
+                    if (now - lastTouchEnd <= 300) {
+                        event.preventDefault();
+                    }
+                    lastTouchEnd = now;
+                }, { passive: false });
                 plateContainer.appendChild(p);
             }
             updateLivesUI();
@@ -566,13 +573,6 @@
         }
 
         let lastTouchEnd = 0;
-        document.addEventListener('touchend', function (event) {
-            const now = Date.now();
-            if (now - lastTouchEnd <= 300) {
-                event.preventDefault();
-            }
-            lastTouchEnd = now;
-        }, false);
 
         init();
     </script>
