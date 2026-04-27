@@ -23,6 +23,8 @@
             overflow-x: hidden;
             overflow-y: auto;
             min-height: 100dvh;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
         }
         .japandi-wood {
             background: linear-gradient(to bottom, var(--wood-light), #dec9ae);
@@ -31,6 +33,7 @@
         .sushi-plate {
             transition: all 0.1s ease-out;
             border-bottom: 3px solid #ccc;
+            touch-action: manipulation;
         }
         .sushi-plate:active {
             transform: translateY(2px);
@@ -561,6 +564,15 @@
             updateLivesUI(); document.getElementById('game-over').style.display = 'none';
             isRunning = true; lastSpawn = performance.now() - (spawnInterval - 500); requestAnimationFrame(gameLoop);
         }
+
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function (event) {
+            const now = Date.now();
+            if (now - lastTouchEnd <= 300) {
+                event.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
 
         init();
     </script>
